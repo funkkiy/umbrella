@@ -1,0 +1,6 @@
+# Visual Studio Directories
+.vs/
+.vscode/
+
+# Visual Studio CMake Settings
+/CMakeSettings.json
