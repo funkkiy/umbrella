@@ -1,6 +1,6 @@
 #include "umbrella/UmbrellaApplication.h"
 
-int main(int argc, char* argv[])
+int main(int, char*[])
 {
     Umbrella::UmbrellaApplication app;
     app.Run();
