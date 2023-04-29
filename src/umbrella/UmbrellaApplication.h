@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glad/gl.h>
+
 struct GLFWwindow;
 
 namespace Umbrella {
@@ -10,12 +12,14 @@ public:
 
 protected:
     bool Initialize();
+    bool Prepare();
     void Tick();
     void Render();
     void Stop();
 
 private:
     GLFWwindow* m_window;
+    GLuint m_shaderProgram;
 };
 
 } // namespace Umbrella

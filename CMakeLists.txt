@@ -41,6 +41,14 @@ list(APPEND UMBRELLA_SOURCES
     src/umbrella/UmbrellaApplication.cpp
     src/umbrella/UmbrellaApplication.h
 
+    # umbrella graphics
+    src/umbrella/gfx/ShaderProgram.cpp
+    src/umbrella/gfx/ShaderProgram.h
+
+    # umbrella utility
+    src/umbrella/util/File.cpp
+    src/umbrella/util/File.h
+
     # glad
     vendor/glad/src/gl.c
 )
