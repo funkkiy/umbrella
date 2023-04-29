@@ -34,6 +34,9 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(vendor/glfw)
 
+# spdlog
+add_subdirectory(vendor/spdlog)
+
 # umbrella target
 list(APPEND UMBRELLA_SOURCES
     # umbrella
@@ -68,7 +71,7 @@ target_sources(Umbrella PRIVATE
 target_include_directories(Umbrella PRIVATE
     ${UMBRELLA_INCLUDES}
 )
-target_link_libraries(Umbrella glfw)
+target_link_libraries(Umbrella glfw spdlog)
 target_compile_features(Umbrella PRIVATE cxx_std_20)
 target_compile_options(Umbrella PRIVATE
     ${WALL_OTHERS} ${WALL_MSVC}

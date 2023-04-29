@@ -7,6 +7,8 @@
 #include "gfx/ShaderProgram.h"
 #include "util/File.h"
 
+#include <spdlog/spdlog.h>
+
 namespace Umbrella {
 
 InitializeResult UmbrellaApplication::Initialize()
