@@ -9,10 +9,10 @@
 
 namespace Umbrella {
 
-bool UmbrellaApplication::Initialize()
+InitializeResult UmbrellaApplication::Initialize()
 {
     if (!glfwInit()) {
-        return false;
+        return InitializeResult::GLFWInitFail;
     }
 
     // Create a window with a OpenGL 4.6 Core context
@@ -23,36 +23,34 @@ bool UmbrellaApplication::Initialize()
     m_window = glfwCreateWindow(640, 480, "Umbrella", nullptr, nullptr);
     if (!m_window) {
         Stop();
-        return false;
+        return InitializeResult::WindowCreationFail;
     }
     glfwMakeContextCurrent(m_window);
 
     if (!gladLoadGL(glfwGetProcAddress)) {
         Stop();
-        return false;
+        return InitializeResult::GLADLoaderFail;
     }
 
     glfwSwapInterval(1);
 
-    return true;
+    return InitializeResult::InitializeOk;
 }
 
-bool UmbrellaApplication::Prepare()
+PrepareResult UmbrellaApplication::Prepare()
 {
     std::optional<std::string> vertexSrc, fragSrc;
     vertexSrc = Umbrella::Util::ReadFile("VertexShader.glsl");
     fragSrc = Umbrella::Util::ReadFile("FragShader.glsl");
     if (!vertexSrc || !fragSrc) {
-        // Failed to read shader sources
-        return false;
+        return PrepareResult::SourceReadFail;
     }
 
     std::optional<GLuint> shaderProgram = Umbrella::Gfx::CompileProgram(*vertexSrc, *fragSrc);
     if (shaderProgram) {
         m_shaderProgram = *shaderProgram;
     } else {
-        // Failed to build shaders
-        return false;
+        return PrepareResult::ShaderBuildFail;
     }
 
     float vtx[] = {
@@ -75,10 +73,13 @@ bool UmbrellaApplication::Prepare()
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // glBindBuffer(GL_ARRAY_BUFFER, 0);
-    // glBindVertexArray(0);
+    m_VAO = VAO;
 
-    return true;
+    // Unbind VAO and VBO before use.
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    return PrepareResult::PrepareOk;
 }
 
 void UmbrellaApplication::Render()
@@ -86,6 +87,7 @@ void UmbrellaApplication::Render()
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    glBindVertexArray(m_VAO);
     glUseProgram(m_shaderProgram);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
@@ -105,12 +107,10 @@ void UmbrellaApplication::Stop()
 
 void UmbrellaApplication::Run()
 {
-    bool appInitOk = Initialize();
-    if (!appInitOk) {
+    if (Initialize() != InitializeResult::InitializeOk || Prepare() != PrepareResult::PrepareOk) {
         return;
     };
 
-    Prepare();
     while (!glfwWindowShouldClose(m_window)) {
         Tick();
     }
