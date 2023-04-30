@@ -17,7 +17,8 @@ enum class [[nodiscard]] InitializeResult : uint8_t {
 enum class [[nodiscard]] PrepareResult : uint8_t {
     PrepareOk = 0,
     SourceReadFail = 1,
-    ShaderBuildFail = 2
+    ShaderBuildFail = 2,
+    ObjLoadFail = 3
 };
 
 class UmbrellaApplication {
@@ -33,6 +34,9 @@ protected:
 
 private:
     GLFWwindow* m_window;
+    int m_windowWidth;
+    int m_windowHeight;
+
     GLuint m_shaderProgram;
     GLuint m_VAO;
 };

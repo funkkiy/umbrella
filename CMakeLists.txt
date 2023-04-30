@@ -1,23 +1,23 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(Umbrella LANGUAGES CXX)
+project(Umbrella LANGUAGES CXX C)
 
 string(CONCAT WALL_OTHERS "$<"
     "$<AND:"
-        "$<COMPILE_LANGUAGE:CXX>,"
+        "$<COMPILE_LANGUAGE:CXX,C>,"
         "$<NOT:"
             "$<CXX_COMPILER_ID:MSVC>"
         ">"
     ">:"
-    "-Wall -Wextra"
+    "SHELL:-Wall -Wextra -Wdouble-promotion -Wshadow"
 ">")
 
 string(CONCAT WALL_MSVC "$<"
     "$<AND:"
-        "$<COMPILE_LANGUAGE:CXX>,"
+        "$<COMPILE_LANGUAGE:CXX,C>,"
         "$<CXX_COMPILER_ID:MSVC>"
     ">:"
-    "/W4"
+    "SHELL:/W4 /wd4201"
 ">")
 
 # enable folder hierarchy: filters on msvc
@@ -37,6 +37,9 @@ add_subdirectory(vendor/glfw)
 # spdlog
 add_subdirectory(vendor/spdlog)
 
+# glm
+add_subdirectory(vendor/glm)
+
 # umbrella target
 list(APPEND UMBRELLA_SOURCES
     # umbrella
@@ -54,6 +57,9 @@ list(APPEND UMBRELLA_SOURCES
 
     # glad
     vendor/glad/src/gl.c
+
+    # tinyobjloader
+    vendor/tinyobjloader/tiny_obj_loader.cc
 )
 
 list(APPEND UMBRELLA_INCLUDES
@@ -62,6 +68,9 @@ list(APPEND UMBRELLA_INCLUDES
 
     # glad
     vendor/glad/include
+
+    # tinyobjloader
+    vendor/tinyobjloader
 )
 
 add_executable(Umbrella)
@@ -71,7 +80,7 @@ target_sources(Umbrella PRIVATE
 target_include_directories(Umbrella PRIVATE
     ${UMBRELLA_INCLUDES}
 )
-target_link_libraries(Umbrella glfw spdlog)
+target_link_libraries(Umbrella glfw spdlog glm)
 target_compile_features(Umbrella PRIVATE cxx_std_20)
 target_compile_options(Umbrella PRIVATE
     ${WALL_OTHERS} ${WALL_MSVC}

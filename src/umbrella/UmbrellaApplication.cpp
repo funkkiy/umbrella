@@ -3,11 +3,14 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/gl.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <spdlog/spdlog.h>
+#include <tiny_obj_loader.h>
 
 #include "gfx/ShaderProgram.h"
 #include "util/File.h"
-
-#include <spdlog/spdlog.h>
 
 namespace Umbrella {
 
@@ -23,15 +26,25 @@ InitializeResult UmbrellaApplication::Initialize()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    m_window = glfwCreateWindow(640, 480, "Umbrella", nullptr, nullptr);
+
+    constexpr int defaultWidth = 640;
+    constexpr int defaultHeight = 480;
+    m_window = glfwCreateWindow(defaultWidth, defaultHeight, "Umbrella", nullptr, nullptr);
     if (!m_window) {
         Stop();
         return InitializeResult::WindowCreationFail;
     }
     glfwMakeContextCurrent(m_window);
 
+    m_windowWidth = defaultWidth;
+    m_windowHeight = defaultHeight;
+
     // Resize the Viewport, in case the window size changes
-    glfwSetWindowSizeCallback(m_window, [](GLFWwindow*, int width, int height) {
+    glfwSetWindowUserPointer(m_window, this);
+    glfwSetWindowSizeCallback(m_window, [](GLFWwindow* window, int width, int height) {
+        UmbrellaApplication* app = static_cast<UmbrellaApplication*>(glfwGetWindowUserPointer(window));
+        app->m_windowWidth = width;
+        app->m_windowHeight = height;
         glViewport(0, 0, width, height);
     });
 
@@ -48,8 +61,8 @@ InitializeResult UmbrellaApplication::Initialize()
 PrepareResult UmbrellaApplication::Prepare()
 {
     std::optional<std::string> vertexSrc, fragSrc;
-    vertexSrc = Umbrella::Util::ReadFile("VertexShader.glsl");
-    fragSrc = Umbrella::Util::ReadFile("FragShader.glsl");
+    vertexSrc = Umbrella::Util::ReadFile("shaders/VertexShader.glsl");
+    fragSrc = Umbrella::Util::ReadFile("shaders/FragShader.glsl");
     if (!vertexSrc || !fragSrc) {
         return PrepareResult::SourceReadFail;
     }
@@ -96,6 +109,20 @@ void UmbrellaApplication::Render()
     glClear(GL_COLOR_BUFFER_BIT);
 
     glBindVertexArray(m_VAO);
+
+    // Pass MVP into Vertex Shader.
+    GLuint projectionIdx = glGetUniformLocation(m_shaderProgram, "uProjection");
+    GLuint viewIdx = glGetUniformLocation(m_shaderProgram, "uView");
+    GLuint modelIdx = glGetUniformLocation(m_shaderProgram, "uModel");
+
+    glm::mat4 model = glm::rotate(glm::mat4(1.0), glm::radians(45.0f), glm::vec3(0.0, 1.0, 0.0));
+    glm::mat4 view = glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, -3.0));
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight), 0.1f, 100.0f);
+
+    glUniformMatrix4fv(modelIdx, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(viewIdx, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projectionIdx, 1, GL_FALSE, glm::value_ptr(projection));
+
     glUseProgram(m_shaderProgram);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
@@ -103,7 +130,6 @@ void UmbrellaApplication::Render()
 void UmbrellaApplication::Tick()
 {
     Render();
-
     glfwSwapBuffers(m_window);
     glfwPollEvents();
 }
