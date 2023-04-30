@@ -22,12 +22,18 @@ InitializeResult UmbrellaApplication::Initialize()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     m_window = glfwCreateWindow(640, 480, "Umbrella", nullptr, nullptr);
     if (!m_window) {
         Stop();
         return InitializeResult::WindowCreationFail;
     }
     glfwMakeContextCurrent(m_window);
+
+    // Resize the Viewport, in case the window size changes
+    glfwSetWindowSizeCallback(m_window, [](GLFWwindow*, int width, int height) {
+        glViewport(0, 0, width, height);
+    });
 
     if (!gladLoadGL(glfwGetProcAddress)) {
         Stop();
@@ -56,9 +62,9 @@ PrepareResult UmbrellaApplication::Prepare()
     }
 
     float vtx[] = {
-        -0.5, -0.5, +0.0, +1.0, +0.0, +0.0, // Vertex 1 (bottom left)
-        +0.5, -0.5, +0.0, +0.0, +1.0, +0.0, // Vertex 2 (bottom right)
-        +0.0, +0.5, +0.0, +0.0, +0.0, +1.0  // Vertex 3 (top)
+        -0.5, -0.5, +0.0, +1.0, +0.0, +0.0, // Bottom Left Vertex
+        +0.5, -0.5, +0.0, +0.0, +1.0, +0.0, // Bottom Right Vertex
+        +0.0, +0.5, +0.0, +0.0, +0.0, +1.0  // Top Vertex
     };
 
     GLuint VAO, VBO;
