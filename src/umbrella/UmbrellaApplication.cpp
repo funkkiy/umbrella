@@ -110,14 +110,23 @@ void UmbrellaApplication::Tick()
 
 void UmbrellaApplication::Stop()
 {
+    spdlog::info("Stopping...");
     glfwTerminate();
 }
 
 void UmbrellaApplication::Run()
 {
-    if (Initialize() != InitializeResult::InitializeOk || Prepare() != PrepareResult::PrepareOk) {
+    spdlog::info("Started Umbrella.");
+
+    if (Initialize() != InitializeResult::InitializeOk) {
+        spdlog::error("Initialize() != InitializeResult::InitializeOk");
         return;
     };
+
+    if (Prepare() != PrepareResult::PrepareOk) {
+        spdlog::error("Prepare() != PrepareResult::PrepareOk");
+        return;
+    }
 
     while (!glfwWindowShouldClose(m_window)) {
         Tick();
