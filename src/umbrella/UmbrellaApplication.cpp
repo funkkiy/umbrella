@@ -80,7 +80,7 @@ PrepareResult UmbrellaApplication::Prepare()
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
     std::string objWarn, objError;
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &objWarn, &objError, "meshes/suzanne.obj", "meshes/")) {
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &objWarn, &objError, "meshes/teapot.obj", "meshes/")) {
         if (!objError.empty()) {
             spdlog::error("TinyObjLoader error: {}", objError);
         }
@@ -138,9 +138,13 @@ void UmbrellaApplication::Render()
     GLuint viewIdx = glGetUniformLocation(m_shaderProgram, "uView");
     GLuint modelIdx = glGetUniformLocation(m_shaderProgram, "uModel");
 
-    glm::mat4 model = glm::rotate(glm::mat4(1.0), glm::radians(45.0f), glm::vec3(0.0, 1.0, 0.0));
+    // The Model has to follow the Scale-Rotate-Translate order.
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+    model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::translate(model, glm::vec3(0.0f, -1.5f, 0.75f));
     glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
-    glm::mat4 projection = glm::perspective(glm::radians(70.0f), static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight), 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight), 0.1f, 100.0f);
 
     glUniformMatrix4fv(modelIdx, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(viewIdx, 1, GL_FALSE, glm::value_ptr(view));
