@@ -7,6 +7,7 @@
 #include <glad/gl.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/random.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <spdlog/spdlog.h>
 #include <tiny_obj_loader.h>
@@ -18,6 +19,8 @@ namespace Umbrella {
 
 InitializeResult UmbrellaApplication::Initialize()
 {
+    srand(time(0));
+
     if (!glfwInit()) {
         return InitializeResult::GLFWInitFail;
     }
@@ -98,6 +101,16 @@ PrepareResult UmbrellaApplication::Prepare()
         }
     }
 
+    std::vector<float> vertexBuffer;
+    for (int i = 0; i < attrib.vertices.size(); i += 3) {
+        vertexBuffer.push_back(attrib.vertices[i]);
+        vertexBuffer.push_back(attrib.vertices[i + 1]);
+        vertexBuffer.push_back(attrib.vertices[i + 2]);
+        for (int j = 0; j < 3; j++) {
+            vertexBuffer.push_back(glm::linearRand(-1.0f, 1.0f));
+        }
+    }
+
     // Create VAO, VBO and EBO.
     GLuint VAO, VBO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -108,7 +121,7 @@ PrepareResult UmbrellaApplication::Prepare()
 
     // Upload mesh vertices into the VBO.
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(tinyobj::real_t) * attrib.vertices.size(), attrib.vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexBuffer.size(), vertexBuffer.data(), GL_STATIC_DRAW);
 
     // Upload mesh indices into the EBO.
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -116,7 +129,11 @@ PrepareResult UmbrellaApplication::Prepare()
 
     // Declare Position attribute in the VAO.
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+
+    // Declare Color attribute in the VAO.
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
     m_VAO = VAO;
 
@@ -125,13 +142,15 @@ PrepareResult UmbrellaApplication::Prepare()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+    glEnable(GL_DEPTH_TEST);
+
     return PrepareResult::PrepareOk;
 }
 
 void UmbrellaApplication::Render()
 {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Pass MVP into the Vertex Shader.
     GLuint projectionIdx = glGetUniformLocation(m_shaderProgram, "uProjection");
