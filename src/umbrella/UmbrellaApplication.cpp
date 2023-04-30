@@ -80,7 +80,7 @@ PrepareResult UmbrellaApplication::Prepare()
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
     std::string objWarn, objError;
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &objWarn, &objError, "meshes/suzanne.obj")) {
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &objWarn, &objError, "meshes/suzanne.obj", "meshes/")) {
         if (!objError.empty()) {
             spdlog::error("TinyObjLoader error: {}", objError);
         }
@@ -133,7 +133,7 @@ void UmbrellaApplication::Render()
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // Pass MVP into Vertex Shader.
+    // Pass MVP into the Vertex Shader.
     GLuint projectionIdx = glGetUniformLocation(m_shaderProgram, "uProjection");
     GLuint viewIdx = glGetUniformLocation(m_shaderProgram, "uView");
     GLuint modelIdx = glGetUniformLocation(m_shaderProgram, "uModel");
