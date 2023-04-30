@@ -1,5 +1,7 @@
 #include <UmbrellaApplication.h>
 
+#include <vector>
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/gl.h>
@@ -74,41 +76,62 @@ PrepareResult UmbrellaApplication::Prepare()
         return PrepareResult::ShaderBuildFail;
     }
 
-    float vtx[] = {
-        -0.5, -0.5, +0.0, +1.0, +0.0, +0.0, // Bottom Left Vertex
-        +0.5, -0.5, +0.0, +0.0, +1.0, +0.0, // Bottom Right Vertex
-        +0.0, +0.5, +0.0, +0.0, +0.0, +1.0  // Top Vertex
-    };
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string objWarn, objError;
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &objWarn, &objError, "meshes/suzanne.obj")) {
+        if (!objError.empty()) {
+            spdlog::error("TinyObjLoader error: {}", objError);
+        }
+        return PrepareResult::ObjLoadFail;
+    }
+    if (!objWarn.empty()) {
+        spdlog::warn("TinyObjLoader warning: {}", objWarn);
+    }
 
-    GLuint VAO, VBO;
+    m_numVertices = 3 * static_cast<int>(attrib.vertices.size());
+    std::vector<int> vertexIndices;
+    for (auto const& shape : shapes) {
+        for (auto const& idxGroup : shape.mesh.indices) {
+            vertexIndices.push_back(idxGroup.vertex_index);
+        }
+    }
+
+    // Create VAO, VBO and EBO.
+    GLuint VAO, VBO, EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
+
+    // Upload mesh vertices into the VBO.
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vtx), vtx, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(tinyobj::real_t) * attrib.vertices.size(), attrib.vertices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    // Upload mesh indices into the EBO.
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * vertexIndices.size(), vertexIndices.data(), GL_STATIC_DRAW);
+
+    // Declare Position attribute in the VAO.
     glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
     m_VAO = VAO;
 
-    // Unbind VAO and VBO before use.
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // Unbind VAO, VBO and EBO before use.
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     return PrepareResult::PrepareOk;
 }
 
 void UmbrellaApplication::Render()
 {
-    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-
-    glBindVertexArray(m_VAO);
 
     // Pass MVP into Vertex Shader.
     GLuint projectionIdx = glGetUniformLocation(m_shaderProgram, "uProjection");
@@ -116,15 +139,16 @@ void UmbrellaApplication::Render()
     GLuint modelIdx = glGetUniformLocation(m_shaderProgram, "uModel");
 
     glm::mat4 model = glm::rotate(glm::mat4(1.0), glm::radians(45.0f), glm::vec3(0.0, 1.0, 0.0));
-    glm::mat4 view = glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, -3.0));
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight), 0.1f, 100.0f);
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+    glm::mat4 projection = glm::perspective(glm::radians(70.0f), static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight), 0.1f, 100.0f);
 
     glUniformMatrix4fv(modelIdx, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(viewIdx, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projectionIdx, 1, GL_FALSE, glm::value_ptr(projection));
 
     glUseProgram(m_shaderProgram);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(m_VAO);
+    glDrawElements(GL_TRIANGLES, m_numVertices, GL_UNSIGNED_INT, 0);
 }
 
 void UmbrellaApplication::Tick()

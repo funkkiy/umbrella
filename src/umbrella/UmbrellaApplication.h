@@ -39,6 +39,8 @@ private:
 
     GLuint m_shaderProgram;
     GLuint m_VAO;
+
+    int m_numVertices;
 };
 
 } // namespace Umbrella
