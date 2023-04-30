@@ -90,9 +90,9 @@ PrepareResult UmbrellaApplication::Prepare()
         spdlog::warn("TinyObjLoader warning: {}", objWarn);
     }
 
-    m_numVertices = 3 * static_cast<int>(attrib.vertices.size());
     std::vector<int> vertexIndices;
     for (auto const& shape : shapes) {
+        m_numVertices += shape.mesh.indices.size();
         for (auto const& idxGroup : shape.mesh.indices) {
             vertexIndices.push_back(idxGroup.vertex_index);
         }
