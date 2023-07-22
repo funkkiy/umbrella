@@ -81,7 +81,7 @@ target_include_directories(Umbrella PRIVATE
     ${UMBRELLA_INCLUDES}
 )
 target_link_libraries(Umbrella glfw spdlog glm)
-target_compile_features(Umbrella PRIVATE cxx_std_20)
+target_compile_features(Umbrella PRIVATE cxx_std_23)
 target_compile_options(Umbrella PRIVATE
     ${WALL_OTHERS} ${WALL_MSVC}
 )
