@@ -34,13 +34,13 @@ protected:
 
 private:
     GLFWwindow* m_window = nullptr;
-    int m_windowWidth;
-    int m_windowHeight;
+    int m_windowWidth = 0;
+    int m_windowHeight = 0;
 
-    GLuint m_shaderProgram;
-    GLuint m_VAO;
+    GLuint m_shaderProgram = 0;
+    GLuint m_VAO = 0;
 
-    int m_numVertices = 0;
+    size_t m_numVertices = 0;
 };
 
 } // namespace Umbrella

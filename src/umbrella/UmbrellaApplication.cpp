@@ -19,7 +19,7 @@ namespace Umbrella {
 
 InitializeResult UmbrellaApplication::Initialize()
 {
-    srand(time(0));
+    srand(static_cast<unsigned int>(time(nullptr)));
 
     if (!glfwInit()) {
         return InitializeResult::GLFWInitFail;
