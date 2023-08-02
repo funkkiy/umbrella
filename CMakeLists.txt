@@ -54,6 +54,7 @@ list(APPEND UMBRELLA_SOURCES
     # umbrella utility
     src/umbrella/util/File.cpp
     src/umbrella/util/File.h
+    src/umbrella/util/Framework.h
 
     # glad
     vendor/glad/src/gl.c

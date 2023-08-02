@@ -10,9 +10,9 @@ std::optional<std::string> ReadFile(char const* filePath)
 {
     std::ifstream inputStream = std::ifstream(filePath, std::ios::in);
     if (inputStream) {
-        std::string inputContents = {
-            std::istreambuf_iterator<char>(inputStream),
-            std::istreambuf_iterator<char>()};
+        std::string inputContents
+            = {std::istreambuf_iterator<char>(inputStream),
+                std::istreambuf_iterator<char>()};
 
         // If present, remove the last empty line
         size_t lastCharacterIdx = inputContents.length() - 1;

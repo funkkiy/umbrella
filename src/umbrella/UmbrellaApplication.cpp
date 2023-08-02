@@ -14,13 +14,12 @@
 
 #include "gfx/ShaderProgram.h"
 #include "util/File.h"
+#include "util/Framework.h"
 
 namespace Umbrella {
 
 InitializeResult UmbrellaApplication::Initialize()
 {
-    srand(static_cast<unsigned int>(time(nullptr)));
-
     if (!glfwInit()) {
         return InitializeResult::GLFWInitFail;
     }
@@ -34,7 +33,8 @@ InitializeResult UmbrellaApplication::Initialize()
 
     constexpr int defaultWidth = 640;
     constexpr int defaultHeight = 480;
-    m_window = glfwCreateWindow(defaultWidth, defaultHeight, "Umbrella", nullptr, nullptr);
+    m_window = glfwCreateWindow(
+        defaultWidth, defaultHeight, "Umbrella", nullptr, nullptr);
     if (!m_window) {
         Stop();
         return InitializeResult::WindowCreationFail;
@@ -46,12 +46,14 @@ InitializeResult UmbrellaApplication::Initialize()
 
     // Resize the Viewport, in case the window size changes
     glfwSetWindowUserPointer(m_window, this);
-    glfwSetWindowSizeCallback(m_window, [](GLFWwindow* window, int width, int height) {
-        UmbrellaApplication* app = static_cast<UmbrellaApplication*>(glfwGetWindowUserPointer(window));
-        app->m_windowWidth = width;
-        app->m_windowHeight = height;
-        glViewport(0, 0, width, height);
-    });
+    glfwSetWindowSizeCallback(
+        m_window, [](GLFWwindow* window, int width, int height) {
+            auto app = static_cast<UmbrellaApplication*>(
+                glfwGetWindowUserPointer(window));
+            app->m_windowWidth = width;
+            app->m_windowHeight = height;
+            glViewport(0, 0, width, height);
+        });
 
     if (!gladLoadGL(glfwGetProcAddress)) {
         Stop();
@@ -72,7 +74,8 @@ PrepareResult UmbrellaApplication::Prepare()
         return PrepareResult::SourceReadFail;
     }
 
-    std::optional<GLuint> shaderProgram = Umbrella::Gfx::CompileProgram(*vertexSrc, *fragSrc);
+    std::optional<GLuint> shaderProgram
+        = Umbrella::Gfx::CompileProgram(*vertexSrc, *fragSrc);
     if (shaderProgram) {
         m_shaderProgram = *shaderProgram;
     } else {
@@ -83,7 +86,8 @@ PrepareResult UmbrellaApplication::Prepare()
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
     std::string objWarn, objError;
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &objWarn, &objError, "meshes/teapot.obj", "meshes/")) {
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &objWarn, &objError,
+            "meshes/suzanne.obj", "meshes/")) {
         if (!objError.empty()) {
             spdlog::error("TinyObjLoader error: {}", objError);
         }
@@ -121,19 +125,23 @@ PrepareResult UmbrellaApplication::Prepare()
 
     // Upload mesh vertices into the VBO.
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexBuffer.size(), vertexBuffer.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexBuffer.size(),
+        vertexBuffer.data(), GL_STATIC_DRAW);
 
     // Upload mesh indices into the EBO.
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * vertexIndices.size(), vertexIndices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * vertexIndices.size(),
+        vertexIndices.data(), GL_STATIC_DRAW);
 
     // Declare Position attribute in the VAO.
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(
+        0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 
     // Declare Color attribute in the VAO.
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+        (void*)(3 * sizeof(float)));
 
     m_VAO = VAO;
 
@@ -153,17 +161,21 @@ void UmbrellaApplication::Render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Pass MVP into the Vertex Shader.
-    GLuint projectionIdx = glGetUniformLocation(m_shaderProgram, "uProjection");
-    GLuint viewIdx = glGetUniformLocation(m_shaderProgram, "uView");
-    GLuint modelIdx = glGetUniformLocation(m_shaderProgram, "uModel");
+    GLint projectionIdx = glGetUniformLocation(m_shaderProgram, "uProjection");
+    GLint viewIdx = glGetUniformLocation(m_shaderProgram, "uView");
+    GLint modelIdx = glGetUniformLocation(m_shaderProgram, "uModel");
 
     // The Model has to follow the Scale-Rotate-Translate order.
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-    model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    model
+        = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     model = glm::translate(model, glm::vec3(0.0f, -1.5f, 0.75f));
-    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight), 0.1f, 100.0f);
+    glm::mat4 view
+        = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f),
+        static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight),
+        0.1f, 100.0f);
 
     glUniformMatrix4fv(modelIdx, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(viewIdx, 1, GL_FALSE, glm::value_ptr(view));
@@ -171,7 +183,8 @@ void UmbrellaApplication::Render()
 
     glUseProgram(m_shaderProgram);
     glBindVertexArray(m_VAO);
-    glDrawElements(GL_TRIANGLES, m_numVertices, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, narrow_into<GLsizei>(m_numVertices),
+        GL_UNSIGNED_INT, nullptr);
 }
 
 void UmbrellaApplication::Tick()
