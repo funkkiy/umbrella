@@ -7,8 +7,7 @@ template <typename Into, typename From> constexpr Into narrow_into(From x)
 {
     static_assert(std::is_arithmetic_v<From> && std::is_arithmetic_v<Into>,
         "narrow_into requires arithmetic types");
-    static_assert(
-        std::is_integral_v<From> && std::is_integral_v<Into>,
+    static_assert(std::is_integral_v<From> && std::is_integral_v<Into>,
         "narrow_into requires integral types");
     static_assert(sizeof(From) >= sizeof(Into),
         "narrow_into requires From to be bigger than Into");
@@ -21,5 +20,5 @@ template <typename Into, typename From> constexpr Into narrow_into(From x)
         return std::numeric_limits<Into>::max();
     }
 
-    return x;
+    return static_cast<Into>(x);
 }

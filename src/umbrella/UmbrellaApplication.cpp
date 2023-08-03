@@ -1,10 +1,11 @@
-#include <UmbrellaApplication.h>
+#include "UmbrellaApplication.h"
 
 #include <vector>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/gl.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/random.hpp>
@@ -67,6 +68,8 @@ InitializeResult UmbrellaApplication::Initialize()
 
 PrepareResult UmbrellaApplication::Prepare()
 {
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
     std::optional<std::string> vertexSrc, fragSrc;
     vertexSrc = Umbrella::Util::ReadFile("shaders/VertexShader.glsl");
     fragSrc = Umbrella::Util::ReadFile("shaders/FragShader.glsl");
@@ -87,7 +90,7 @@ PrepareResult UmbrellaApplication::Prepare()
     std::vector<tinyobj::material_t> materials;
     std::string objWarn, objError;
     if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &objWarn, &objError,
-            "meshes/suzanne.obj", "meshes/")) {
+            "meshes/capsule.obj", "meshes/")) {
         if (!objError.empty()) {
             spdlog::error("TinyObjLoader error: {}", objError);
         }
@@ -97,58 +100,54 @@ PrepareResult UmbrellaApplication::Prepare()
         spdlog::warn("TinyObjLoader warning: {}", objWarn);
     }
 
-    std::vector<int> vertexIndices;
-    for (auto const& shape : shapes) {
+    struct VertexAttributes {
+        float x, y, z;
+        float u, v;
+    };
+
+    std::vector<VertexAttributes> vertexBuffer;
+    for (auto& shape : shapes) {
         m_numVertices += shape.mesh.indices.size();
-        for (auto const& idxGroup : shape.mesh.indices) {
-            vertexIndices.push_back(idxGroup.vertex_index);
+        for (auto& i : shape.mesh.indices) {
+            VertexAttributes attribute {
+                .x = attrib.vertices[3 * i.vertex_index + 0],
+                .y = attrib.vertices[3 * i.vertex_index + 1],
+                .z = attrib.vertices[3 * i.vertex_index + 2],
+                .u = attrib.texcoords[2 * i.texcoord_index + 0],
+                .v = attrib.texcoords[2 * i.texcoord_index + 1],
+            };
+            vertexBuffer.push_back(attribute);
         }
     }
-
-    std::vector<float> vertexBuffer;
-    for (int i = 0; i < attrib.vertices.size(); i += 3) {
-        vertexBuffer.push_back(attrib.vertices[i]);
-        vertexBuffer.push_back(attrib.vertices[i + 1]);
-        vertexBuffer.push_back(attrib.vertices[i + 2]);
-        for (int j = 0; j < 3; j++) {
-            vertexBuffer.push_back(glm::linearRand(-1.0f, 1.0f));
-        }
-    }
-
-    // Create VAO, VBO and EBO.
-    GLuint VAO, VBO, EBO;
+    
+    // Create VAO and VBO.
+    GLuint VAO, VBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
 
     // Upload mesh vertices into the VBO.
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertexBuffer.size(),
+    glBufferData(GL_ARRAY_BUFFER,
+        narrow_into<GLsizeiptr>(sizeof(VertexAttributes) * vertexBuffer.size()),
         vertexBuffer.data(), GL_STATIC_DRAW);
-
-    // Upload mesh indices into the EBO.
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * vertexIndices.size(),
-        vertexIndices.data(), GL_STATIC_DRAW);
 
     // Declare Position attribute in the VAO.
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(
-        0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexAttributes), nullptr);
 
-    // Declare Color attribute in the VAO.
+    // Declare UV attribute in the VAO.
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
-        (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(VertexAttributes),
+        reinterpret_cast<void*>(offsetof(VertexAttributes, u)));
 
     m_VAO = VAO;
 
-    // Unbind VAO, VBO and EBO before use.
+    // Unbind VAO and VBO before use.
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -157,7 +156,6 @@ PrepareResult UmbrellaApplication::Prepare()
 
 void UmbrellaApplication::Render()
 {
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Pass MVP into the Vertex Shader.
@@ -183,8 +181,7 @@ void UmbrellaApplication::Render()
 
     glUseProgram(m_shaderProgram);
     glBindVertexArray(m_VAO);
-    glDrawElements(GL_TRIANGLES, narrow_into<GLsizei>(m_numVertices),
-        GL_UNSIGNED_INT, nullptr);
+    glDrawArrays(GL_TRIANGLES, 0, narrow_into<GLsizei>(m_numVertices));
 }
 
 void UmbrellaApplication::Tick()
@@ -207,7 +204,7 @@ void UmbrellaApplication::Run()
     if (Initialize() != InitializeResult::InitializeOk) {
         spdlog::error("Initialize() != InitializeResult::InitializeOk");
         return;
-    };
+    }
 
     if (Prepare() != PrepareResult::PrepareOk) {
         spdlog::error("Prepare() != PrepareResult::PrepareOk");
