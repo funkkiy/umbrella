@@ -1,5 +1,6 @@
 #include "UmbrellaApplication.h"
 
+#include <unordered_map>
 #include <vector>
 
 #define GLFW_INCLUDE_NONE
@@ -103,9 +104,27 @@ PrepareResult UmbrellaApplication::Prepare()
     struct VertexAttributes {
         float x, y, z;
         float u, v;
+
+        bool operator==(const VertexAttributes& other) const
+        {
+            return x == other.x && y == other.y && z == other.z && u == other.u
+                && v == other.v;
+        }
     };
 
+    struct VertexAttributesHasher {
+        size_t operator()(const VertexAttributes& va) const
+        {
+            return std::hash<float>()(va.x) ^ std::hash<float>()(va.y)
+                ^ std::hash<float>()(va.z) ^ std::hash<float>()(va.u)
+                ^ std::hash<float>()(va.v);
+        }
+    };
+
+    std::vector<int> vertexIndices;
     std::vector<VertexAttributes> vertexBuffer;
+    std::unordered_map<VertexAttributes, size_t, VertexAttributesHasher>
+        seenVertices;
     for (auto& shape : shapes) {
         m_numVertices += shape.mesh.indices.size();
         for (auto& i : shape.mesh.indices) {
@@ -116,14 +135,27 @@ PrepareResult UmbrellaApplication::Prepare()
                 .u = attrib.texcoords[2 * i.texcoord_index + 0],
                 .v = attrib.texcoords[2 * i.texcoord_index + 1],
             };
-            vertexBuffer.push_back(attribute);
+
+            auto seenIt = seenVertices.find(attribute);
+            if (seenIt != seenVertices.end()) {
+                // An equal vertex attribute was found, this means we already
+                // have an index for it.
+                vertexIndices.push_back(narrow_into<int>(seenIt->second));
+            } else {
+                // A new index must be created for this vertex attribute.
+                seenVertices[attribute] = vertexBuffer.size();
+                vertexIndices.push_back(narrow_into<int>(vertexBuffer.size()));
+                vertexBuffer.push_back(attribute);
+            }
         }
     }
-    
-    // Create VAO and VBO.
-    GLuint VAO, VBO;
+
+    // Create VAO, VBO and EBO.
+    GLuint VAO, VBO, EBO;
+
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
 
@@ -132,6 +164,12 @@ PrepareResult UmbrellaApplication::Prepare()
     glBufferData(GL_ARRAY_BUFFER,
         narrow_into<GLsizeiptr>(sizeof(VertexAttributes) * vertexBuffer.size()),
         vertexBuffer.data(), GL_STATIC_DRAW);
+
+    // Upload mesh indices into the EBO.
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+        narrow_into<GLsizei>(sizeof(size_t) * vertexIndices.size()),
+        vertexIndices.data(), GL_STATIC_DRAW);
 
     // Declare Position attribute in the VAO.
     glEnableVertexAttribArray(0);
@@ -145,9 +183,10 @@ PrepareResult UmbrellaApplication::Prepare()
 
     m_VAO = VAO;
 
-    // Unbind VAO and VBO before use.
+    // Unbind VAO, VBO and EBO before use.
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -181,7 +220,8 @@ void UmbrellaApplication::Render()
 
     glUseProgram(m_shaderProgram);
     glBindVertexArray(m_VAO);
-    glDrawArrays(GL_TRIANGLES, 0, narrow_into<GLsizei>(m_numVertices));
+    glDrawElements(GL_TRIANGLES, narrow_into<GLsizei>(m_numVertices),
+        GL_UNSIGNED_INT, nullptr);
 }
 
 void UmbrellaApplication::Tick()
