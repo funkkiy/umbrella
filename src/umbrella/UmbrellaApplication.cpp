@@ -91,7 +91,7 @@ PrepareResult UmbrellaApplication::Prepare()
     std::vector<tinyobj::material_t> materials;
     std::string objWarn, objError;
     if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &objWarn, &objError,
-            "meshes/capsule.obj", "meshes/")) {
+            "meshes/suzanne.obj", "meshes/")) {
         if (!objError.empty()) {
             spdlog::error("TinyObjLoader error: {}", objError);
         }
@@ -128,12 +128,22 @@ PrepareResult UmbrellaApplication::Prepare()
     for (auto& shape : shapes) {
         m_numVertices += shape.mesh.indices.size();
         for (auto& i : shape.mesh.indices) {
+            bool hasPosition = i.vertex_index != -1;
+            bool hasTexCoords = i.texcoord_index != -1;
+
+            if (!hasPosition) {
+                // This vertex does not have Position attributes? Fail.
+                return PrepareResult::ObjParseFail;
+            }
+
             VertexAttributes attribute {
                 .x = attrib.vertices[3 * i.vertex_index + 0],
                 .y = attrib.vertices[3 * i.vertex_index + 1],
                 .z = attrib.vertices[3 * i.vertex_index + 2],
-                .u = attrib.texcoords[2 * i.texcoord_index + 0],
-                .v = attrib.texcoords[2 * i.texcoord_index + 1],
+                .u = hasTexCoords ? attrib.texcoords[2 * i.texcoord_index + 0]
+                                  : -1.0f,
+                .v = hasTexCoords ? attrib.texcoords[2 * i.texcoord_index + 1]
+                                  : -1.0f,
             };
 
             auto seenIt = seenVertices.find(attribute);

@@ -9,6 +9,8 @@ template <typename Into, typename From> constexpr Into narrow_into(From x)
         "narrow_into requires arithmetic types");
     static_assert(std::is_integral_v<From> && std::is_integral_v<Into>,
         "narrow_into requires integral types");
+    static_assert(!std::is_same_v<Into, From>,
+        "narrow_into requires From and Into to be different types");
     static_assert(sizeof(From) >= sizeof(Into),
         "narrow_into requires From to be bigger than Into");
 
