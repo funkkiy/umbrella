@@ -19,7 +19,8 @@ enum class [[nodiscard]] PrepareResult : uint8_t {
     SourceReadFail = 1,
     ShaderBuildFail = 2,
     ObjLoadFail = 3,
-    ObjParseFail = 4
+    ObjParseFail = 4,
+    TexLoadFail = 5
 };
 
 class UmbrellaApplication {
@@ -40,6 +41,7 @@ private:
 
     GLuint m_shaderProgram = 0;
     GLuint m_VAO = 0;
+    GLuint m_meshTexture = 0;
 
     size_t m_numVertices = 0;
 };

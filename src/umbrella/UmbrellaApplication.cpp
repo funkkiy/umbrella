@@ -9,9 +9,9 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/random.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <spdlog/spdlog.h>
+#include <stb_image.h>
 #include <tiny_obj_loader.h>
 
 #include "gfx/ShaderProgram.h"
@@ -91,7 +91,7 @@ PrepareResult UmbrellaApplication::Prepare()
     std::vector<tinyobj::material_t> materials;
     std::string objWarn, objError;
     if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &objWarn, &objError,
-            "meshes/suzanne.obj", "meshes/")) {
+            "meshes/capsule.obj", "meshes/")) {
         if (!objError.empty()) {
             spdlog::error("TinyObjLoader error: {}", objError);
         }
@@ -178,7 +178,7 @@ PrepareResult UmbrellaApplication::Prepare()
     // Upload mesh indices into the EBO.
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-        narrow_into<GLsizei>(sizeof(size_t) * vertexIndices.size()),
+        narrow_into<GLsizei>(sizeof(int) * vertexIndices.size()),
         vertexIndices.data(), GL_STATIC_DRAW);
 
     // Declare Position attribute in the VAO.
@@ -192,6 +192,34 @@ PrepareResult UmbrellaApplication::Prepare()
         reinterpret_cast<void*>(offsetof(VertexAttributes, u)));
 
     m_VAO = VAO;
+
+    // Create the texture for the mesh.
+    GLuint meshTexture;
+    glGenTextures(1, &meshTexture);
+    glBindTexture(GL_TEXTURE_2D, meshTexture);
+
+    // Set texture wrapping and filtering parameters.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Load the texture for the mesh.
+    int width, height, nChannels;
+    unsigned char* textureData
+        = stbi_load("meshes/capsule.jpg", &width, &height, &nChannels, 0);
+    if (textureData) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+            GL_UNSIGNED_BYTE, textureData);
+    } else {
+        return PrepareResult::TexLoadFail;
+    }
+    stbi_image_free(textureData);
+
+    m_meshTexture = meshTexture;
+
+    // Unbind texture before use.
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     // Unbind VAO, VBO and EBO before use.
     glBindVertexArray(0);
@@ -217,7 +245,7 @@ void UmbrellaApplication::Render()
     model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
     model
         = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::translate(model, glm::vec3(0.0f, -1.5f, 0.75f));
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.75f));
     glm::mat4 view
         = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
     glm::mat4 projection = glm::perspective(glm::radians(45.0f),
@@ -230,6 +258,7 @@ void UmbrellaApplication::Render()
 
     glUseProgram(m_shaderProgram);
     glBindVertexArray(m_VAO);
+    glBindTexture(GL_TEXTURE_2D, m_meshTexture);
     glDrawElements(GL_TRIANGLES, narrow_into<GLsizei>(m_numVertices),
         GL_UNSIGNED_INT, nullptr);
 }

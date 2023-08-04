@@ -61,6 +61,9 @@ list(APPEND UMBRELLA_SOURCES
 
     # tinyobjloader
     vendor/tinyobjloader/tiny_obj_loader.cc
+
+    # stb
+    vendor/stb/stb_image.cpp
 )
 
 list(APPEND UMBRELLA_INCLUDES
@@ -72,6 +75,9 @@ list(APPEND UMBRELLA_INCLUDES
 
     # tinyobjloader
     vendor/tinyobjloader
+
+    # stb
+    vendor/stb
 )
 
 add_executable(Umbrella)
