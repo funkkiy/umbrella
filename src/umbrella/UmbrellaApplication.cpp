@@ -183,8 +183,8 @@ PrepareResult UmbrellaApplication::Prepare()
 
     // Declare Position attribute in the VAO.
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(
-        0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexAttributes), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexAttributes),
+        reinterpret_cast<void*>(offsetof(VertexAttributes, x)));
 
     // Declare UV attribute in the VAO.
     glEnableVertexAttribArray(1);
@@ -207,9 +207,9 @@ PrepareResult UmbrellaApplication::Prepare()
     // Load the texture for the mesh.
     int width, height, nChannels;
     unsigned char* textureData
-        = stbi_load("meshes/capsule.jpg", &width, &height, &nChannels, 0);
+        = stbi_load("meshes/capsule.jpg", &width, &height, &nChannels, 4);
     if (textureData) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
             GL_UNSIGNED_BYTE, textureData);
     } else {
         return PrepareResult::TexLoadFail;
