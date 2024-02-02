@@ -69,6 +69,15 @@ InitializeResult UmbrellaApplication::Initialize()
 
 PrepareResult UmbrellaApplication::Prepare()
 {
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(
+        [](GLenum source, GLenum type, GLuint id, GLenum severity,
+            GLsizei length, const GLchar* msg,
+            const void* userParam) {
+                spdlog::warn("{}", msg);
+        },
+        nullptr);
+
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
     std::optional<std::string> vertexSrc, fragSrc;
@@ -91,7 +100,7 @@ PrepareResult UmbrellaApplication::Prepare()
     std::vector<tinyobj::material_t> materials;
     std::string objWarn, objError;
     if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &objWarn, &objError,
-            "meshes/capsule.obj", "meshes/")) {
+            "meshes/suzanne_smooth.obj", "meshes/")) {
         if (!objError.empty()) {
             spdlog::error("TinyObjLoader error: {}", objError);
         }
@@ -104,11 +113,13 @@ PrepareResult UmbrellaApplication::Prepare()
     struct VertexAttributes {
         float x, y, z;
         float u, v;
+        float nx, ny, nz;
 
         bool operator==(const VertexAttributes& other) const
         {
             return x == other.x && y == other.y && z == other.z && u == other.u
-                && v == other.v;
+                && v == other.v && nx == other.nx && ny == other.ny
+                && nz == other.nz;
         }
     };
 
@@ -117,7 +128,8 @@ PrepareResult UmbrellaApplication::Prepare()
         {
             return std::hash<float>()(va.x) ^ std::hash<float>()(va.y)
                 ^ std::hash<float>()(va.z) ^ std::hash<float>()(va.u)
-                ^ std::hash<float>()(va.v);
+                ^ std::hash<float>()(va.v) ^ std::hash<float>()(va.nx)
+                ^ std::hash<float>()(va.ny) ^ std::hash<float>()(va.nz);
         }
     };
 
@@ -130,10 +142,12 @@ PrepareResult UmbrellaApplication::Prepare()
         for (auto& i : shape.mesh.indices) {
             bool hasPosition = i.vertex_index != -1;
             bool hasTexCoords = i.texcoord_index != -1;
+            bool hasNormals = i.normal_index != -1;
 
-            if (!hasPosition) {
-                // This vertex does not have Position attributes? Fail.
-                return PrepareResult::ObjParseFail;
+            if (!hasPosition || !hasNormals) {
+                // Bail if a Vertex does not have one of the necessary
+                // attributes.
+                return PrepareResult::ObjMissingAttrib;
             }
 
             VertexAttributes attribute {
@@ -144,6 +158,12 @@ PrepareResult UmbrellaApplication::Prepare()
                                   : -1.0f,
                 .v = hasTexCoords ? attrib.texcoords[2 * i.texcoord_index + 1]
                                   : -1.0f,
+                .nx
+                = hasNormals ? attrib.normals[3 * i.normal_index + 0] : -1.0f,
+                .ny
+                = hasNormals ? attrib.normals[3 * i.normal_index + 1] : -1.0f,
+                .nz
+                = hasNormals ? attrib.normals[3 * i.normal_index + 2] : -1.0f,
             };
 
             auto seenIt = seenVertices.find(attribute);
@@ -190,6 +210,11 @@ PrepareResult UmbrellaApplication::Prepare()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(VertexAttributes),
         reinterpret_cast<void*>(offsetof(VertexAttributes, u)));
+
+    // Declare Normal attribute in the VAO.
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(VertexAttributes),
+        reinterpret_cast<void*>(offsetof(VertexAttributes, nx)));
 
     m_VAO = VAO;
 
@@ -242,12 +267,12 @@ void UmbrellaApplication::Render()
 
     // The Model has to follow the Scale-Rotate-Translate order.
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
     model
-        = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.75f));
+        = glm::rotate(model, glm::radians(20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
     glm::mat4 view
-        = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+        = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.5f, -7.0f));
     glm::mat4 projection = glm::perspective(glm::radians(45.0f),
         static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight),
         0.1f, 100.0f);

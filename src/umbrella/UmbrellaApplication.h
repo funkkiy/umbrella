@@ -20,7 +20,8 @@ enum class [[nodiscard]] PrepareResult : uint8_t {
     ShaderBuildFail = 2,
     ObjLoadFail = 3,
     ObjParseFail = 4,
-    TexLoadFail = 5
+    ObjMissingAttrib = 5,
+    TexLoadFail = 6
 };
 
 class UmbrellaApplication {
