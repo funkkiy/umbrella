@@ -2,6 +2,7 @@
 
 #include <glad/gl.h>
 #include <optional>
+#include <spdlog/spdlog.h>
 #include <string>
 
 namespace Umbrella::Gfx {
@@ -11,12 +12,20 @@ std::optional<GLuint> CompileProgram(
 {
     GLint shadersOk = true;
 
+    auto printErrorMsg = [](GLuint shader) -> void {
+        GLchar error[512];
+        GLsizei errorLen = 0;
+        glGetShaderInfoLog(shader, 512, &errorLen, error);
+        spdlog::error("{}", error);
+    };
+
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     char const* vsSourceRaw = vsSource.c_str();
     glShaderSource(vertexShader, 1, &vsSourceRaw, nullptr);
     glCompileShader(vertexShader);
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &shadersOk);
     if (!shadersOk) {
+        printErrorMsg(vertexShader);
         return {};
     }
 
@@ -26,6 +35,7 @@ std::optional<GLuint> CompileProgram(
     glCompileShader(fragmentShader);
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &shadersOk);
     if (!shadersOk) {
+        printErrorMsg(fragmentShader);
         return {};
     }
 

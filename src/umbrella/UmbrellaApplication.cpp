@@ -32,6 +32,9 @@ InitializeResult UmbrellaApplication::Initialize()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+#ifdef _DEBUG
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+#endif
 
     constexpr int defaultWidth = 640;
     constexpr int defaultHeight = 480;
@@ -70,11 +73,20 @@ InitializeResult UmbrellaApplication::Initialize()
 PrepareResult UmbrellaApplication::Prepare()
 {
     glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(
         [](GLenum source, GLenum type, GLuint id, GLenum severity,
-            GLsizei length, const GLchar* msg,
-            const void* userParam) {
+            GLsizei length, const GLchar* msg, const void* userParam) {
+            switch (type) {
+            case GL_DEBUG_TYPE_ERROR:
+            case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+            case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+                spdlog::error("{}", msg);
+                break;
+            default:
                 spdlog::warn("{}", msg);
+                break;
+            }
         },
         nullptr);
 
