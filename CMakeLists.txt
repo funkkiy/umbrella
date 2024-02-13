@@ -20,6 +20,16 @@ string(CONCAT WALL_MSVC "$<"
     "SHELL:/W4 /wd4201"
 ">")
 
+string(CONCAT ASAN_MSVC "$<"
+    "$<AND:"
+        "$<COMPILE_LANGUAGE:CXX,C>,"
+        "$<CXX_COMPILER_ID:MSVC>,"
+        "$<CONFIG:DEBUG>"
+    ">:"
+    "SHELL:/fsanitize=address"
+">")
+add_compile_options(${ASAN_MSVC})
+
 # enable folder hierarchy: filters on msvc
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
