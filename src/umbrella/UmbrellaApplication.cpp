@@ -289,13 +289,15 @@ void UmbrellaApplication::Render()
         static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight),
         0.1f, 100.0f);
 
+    glUseProgram(m_shaderProgram);
+    glBindVertexArray(m_VAO);
+    glBindTexture(GL_TEXTURE_2D, m_meshTexture);
+
+    // Uniforms must be set after a program is bound.
     glUniformMatrix4fv(modelIdx, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(viewIdx, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projectionIdx, 1, GL_FALSE, glm::value_ptr(projection));
 
-    glUseProgram(m_shaderProgram);
-    glBindVertexArray(m_VAO);
-    glBindTexture(GL_TEXTURE_2D, m_meshTexture);
     glDrawElements(GL_TRIANGLES, narrow_into<GLsizei>(m_numVertices),
         GL_UNSIGNED_INT, nullptr);
 }
