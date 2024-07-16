@@ -1,6 +1,6 @@
 #include "Camera.h"
 
-#include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
 
 namespace Umbrella {
 
@@ -57,6 +57,8 @@ void Camera::ProcessKeys(int key, int action)
 
 void Camera::ProcessMouse(double x, double y)
 {
+    constexpr float mouseSens = 0.1f;
+
     if (firstMove) {
         m_inputState.prevX = x;
         m_inputState.prevY = y;
@@ -72,7 +74,6 @@ void Camera::ProcessMouse(double x, double y)
     float deltaX = m_inputState.x - m_inputState.prevX;
     float deltaY = m_inputState.prevY - m_inputState.y;
 
-    constexpr float mouseSens = 0.1f;
     m_pitch += mouseSens * deltaY;
     m_yaw += mouseSens * deltaX;
 
@@ -108,7 +109,7 @@ void Camera::Tick(float dt)
     if (m_inputState.e) {
         posDelta += m_up;
     }
-    m_position += (dt * camSpeed * posDelta);
+    m_position += dt * camSpeed * posDelta;
 }
 
 } // namespace Umbrella
