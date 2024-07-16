@@ -20,6 +20,10 @@ string(CONCAT WALL_MSVC "$<"
     "SHELL:/W4 /wd4201"
 ">")
 
+# multi-cpu build
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/MP>)
+
+#[[
 string(CONCAT ASAN_MSVC "$<"
     "$<AND:"
         "$<COMPILE_LANGUAGE:CXX,C>,"
@@ -29,6 +33,7 @@ string(CONCAT ASAN_MSVC "$<"
     "SHELL:/fsanitize=address"
 ">")
 add_compile_options(${ASAN_MSVC})
+]]
 
 # enable folder hierarchy: filters on msvc
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -65,6 +70,10 @@ list(APPEND UMBRELLA_SOURCES
     src/umbrella/util/File.cpp
     src/umbrella/util/File.h
     src/umbrella/util/Framework.h
+
+    # umbrella systems
+    src/umbrella/systems/Camera.cpp
+    src/umbrella/systems/Camera.h
 
     # glad
     vendor/glad/src/gl.c
