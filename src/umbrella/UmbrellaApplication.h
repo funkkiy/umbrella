@@ -40,6 +40,7 @@ protected:
 
     static void ProcessKeys(
         GLFWwindow* window, int key, int scancode, int action, int mods);
+    static void ProcessMouse(GLFWwindow* window, double xpos, double ypos);
 
 private:
     GLFWwindow* m_window {};
@@ -53,7 +54,7 @@ private:
 
     double m_lastTick {};
 
-    std::unique_ptr<Camera> m_currentCamera = std::make_unique<Camera>(glm::vec3(0.0f, -2.0f, 7.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    std::unique_ptr<Camera> m_currentCamera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 7.0f));
 };
 
 } // namespace Umbrella

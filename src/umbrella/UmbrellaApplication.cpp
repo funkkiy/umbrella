@@ -62,6 +62,9 @@ InitializeResult UmbrellaApplication::Initialize()
 
     glfwSetKeyCallback(m_window, ProcessKeys);
 
+    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(m_window, ProcessMouse);
+
     if (!gladLoadGL(glfwGetProcAddress)) {
         Stop();
         return InitializeResult::GLADLoaderFail;
@@ -284,9 +287,10 @@ void UmbrellaApplication::Render()
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
     model
         = glm::rotate(model, glm::radians(20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
-    glm::mat4 view = glm::translate(
-        glm::mat4(1.0f), glm::vec3(-1.0f) * m_currentCamera->m_position);
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    glm::mat4 view = glm::lookAt(m_currentCamera->m_position,
+        m_currentCamera->m_position + m_currentCamera->m_direction,
+        m_currentCamera->m_up);
     glm::mat4 projection = glm::perspective(glm::radians(45.0f),
         static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight),
         0.1f, 100.0f);
@@ -325,6 +329,14 @@ void UmbrellaApplication::ProcessKeys(
     default:
         break;
     }
+}
+
+void UmbrellaApplication::ProcessMouse(
+    GLFWwindow* window, double x, double y)
+{
+    auto* app
+        = static_cast<UmbrellaApplication*>(glfwGetWindowUserPointer(window));
+    app->m_currentCamera->ProcessMouse(x, y);
 }
 
 void UmbrellaApplication::Tick(float dt)
