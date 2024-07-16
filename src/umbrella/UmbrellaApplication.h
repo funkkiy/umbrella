@@ -1,7 +1,10 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <glad/gl.h>
+
+#include "systems/Camera.h"
 
 struct GLFWwindow;
 
@@ -31,20 +34,26 @@ public:
 protected:
     InitializeResult Initialize();
     PrepareResult Prepare();
-    void Tick();
+    void Tick(float dt);
     void Render();
     void Stop();
 
+    static void ProcessKeys(
+        GLFWwindow* window, int key, int scancode, int action, int mods);
+
 private:
-    GLFWwindow* m_window = nullptr;
-    int m_windowWidth = 0;
-    int m_windowHeight = 0;
+    GLFWwindow* m_window {};
+    int m_windowWidth {};
+    int m_windowHeight {};
 
-    GLuint m_shaderProgram = 0;
-    GLuint m_VAO = 0;
-    GLuint m_meshTexture = 0;
+    GLuint m_shaderProgram {};
+    GLuint m_VAO {};
+    GLuint m_meshTexture {};
+    size_t m_numVertices {};
 
-    size_t m_numVertices = 0;
+    double m_lastTick {};
+
+    std::unique_ptr<Camera> m_currentCamera = std::make_unique<Camera>(glm::vec3(0.0f, -2.0f, 7.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 };
 
 } // namespace Umbrella

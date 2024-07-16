@@ -60,6 +60,8 @@ InitializeResult UmbrellaApplication::Initialize()
             glViewport(0, 0, width, height);
         });
 
+    glfwSetKeyCallback(m_window, ProcessKeys);
+
     if (!gladLoadGL(glfwGetProcAddress)) {
         Stop();
         return InitializeResult::GLADLoaderFail;
@@ -283,8 +285,8 @@ void UmbrellaApplication::Render()
     model
         = glm::rotate(model, glm::radians(20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
-    glm::mat4 view
-        = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.5f, -7.0f));
+    glm::mat4 view = glm::translate(
+        glm::mat4(1.0f), glm::vec3(-1.0f) * m_currentCamera->m_position);
     glm::mat4 projection = glm::perspective(glm::radians(45.0f),
         static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight),
         0.1f, 100.0f);
@@ -302,8 +304,32 @@ void UmbrellaApplication::Render()
         GL_UNSIGNED_INT, nullptr);
 }
 
-void UmbrellaApplication::Tick()
+void UmbrellaApplication::ProcessKeys(
+    GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+    auto* app
+        = static_cast<UmbrellaApplication*>(glfwGetWindowUserPointer(window));
+
+    switch (key) {
+    case GLFW_KEY_W:
+    case GLFW_KEY_S:
+    case GLFW_KEY_A:
+    case GLFW_KEY_D:
+    case GLFW_KEY_Q:
+    case GLFW_KEY_E:
+        app->m_currentCamera->ProcessKeys(key, action);
+        break;
+    case GLFW_KEY_ESCAPE:
+        glfwSetWindowShouldClose(app->m_window, true);
+        break;
+    default:
+        break;
+    }
+}
+
+void UmbrellaApplication::Tick(float dt)
+{
+    m_currentCamera->Tick(dt);
     Render();
     glfwSwapBuffers(m_window);
     glfwPollEvents();
@@ -330,7 +356,9 @@ void UmbrellaApplication::Run()
     }
 
     while (!glfwWindowShouldClose(m_window)) {
-        Tick();
+        double currentTick = glfwGetTime();
+        Tick(currentTick - m_lastTick);
+        m_lastTick = currentTick;
     }
 
     Stop();
